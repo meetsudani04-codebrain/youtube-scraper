@@ -1,4 +1,4 @@
-name: Deploy FastAPI to Remote System
+name: CI/CD FastAPI with Tests & Logs
 
 on:
   push:
@@ -6,18 +6,50 @@ on:
       - main
 
 jobs:
-  deploy:
+  test-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy via SSH
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Step 4: Run tests with logs
+      - name: Run Tests
+        run: |
+          source venv/bin/activate
+          echo "===== Running pytest ====="
+          pytest -v --maxfail=1 --disable-warnings tests/
+
+      # Step 5: Deploy only if tests pass
+      - name: Deploy to EC2
+        if: success()
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
           script: |
-            cd /home/deploy/youtube-scraper
+            cd /home/ubuntu/fastapi-app
+            echo "===== Activating virtual environment ====="
             source venv/bin/activate
+            echo "===== Pulling latest code ====="
             git pull origin main
+            echo "===== Installing dependencies ====="
             pip install -r requirements.txt
+            echo "===== Restarting FastAPI service ====="
+            sudo systemctl restart fastapi

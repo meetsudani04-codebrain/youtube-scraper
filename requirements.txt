@@ -6,3 +6,4 @@ pytz
 six             
 tzdata          
 yt-dlp          
+pytest
