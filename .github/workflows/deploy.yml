@@ -17,7 +17,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /home/deploy/fast_api
+            cd /home/deploy/youtube-scraper
             source venv/bin/activate
             git pull origin main
             pip install -r requirements.txt
