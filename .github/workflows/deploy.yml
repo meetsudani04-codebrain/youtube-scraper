@@ -1,4 +1,4 @@
-name: CI/CD FastAPI with Tests & Logs
+name: CI/CD FastAPI with Tests & Render Deploy
 
 on:
   push:
@@ -28,28 +28,16 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step 4: Run tests with logs
+      # Step 4: Run tests
       - name: Run Tests
         run: |
           source venv/bin/activate
           echo "===== Running pytest ====="
           pytest -v --maxfail=1 --disable-warnings tests/
 
-      # Step 5: Deploy only if tests pass
-      - name: Deploy to EC2
+      # Step 5: Deploy to Render (only if tests pass)
+      - name: Deploy to Render
         if: success()
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            cd /home/ubuntu/fastapi-app
-            echo "===== Activating virtual environment ====="
-            source venv/bin/activate
-            echo "===== Pulling latest code ====="
-            git pull origin main
-            echo "===== Installing dependencies ====="
-            pip install -r requirements.txt
-            echo "===== Restarting FastAPI service ====="
-            sudo systemctl restart fastapi
+        run: |
+          echo "===== Triggering Render Deploy ====="
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
