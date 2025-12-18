@@ -1,5 +1,4 @@
-def test_addition():
-    assert 2 + 2 == 4
+from main import add
 
-def test_fail():
-    assert 1 + 1 == 2  # This will fail
+def test_addition_success():
+    assert add(2, 2) == 4
