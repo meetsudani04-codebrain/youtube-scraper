@@ -10,17 +10,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Setup Python
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      # Step 3: Install dependencies
       - name: Install dependencies
         run: |
           python -m venv venv
@@ -28,16 +25,14 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step 4: Run tests
       - name: Run Tests
         run: |
           source venv/bin/activate
-          echo "===== Running pytest ====="
+          echo "----------------------------Running pytest"
           pytest -v --maxfail=1 --disable-warnings tests/
 
-      # Step 5: Deploy to Render (only if tests pass)
       - name: Deploy to Render
         if: success()
         run: |
-          echo "===== Triggering Render Deploy ====="
+          echo "-------------------------------- Triggering Render Deploy"
           curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
