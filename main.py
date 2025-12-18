@@ -1,10 +1,7 @@
-# from fastapi import FastAPI
+from fastapi import FastAPI
 
-# app = FastAPI()
+app = FastAPI()
 
-# @app.get("/")
-# def health():
-#     return {"status": "ok"}
-
-
-print("This file has been deprecated. Please refer to the updated scraper implementation.")
+@app.get("/")
+def health():
+    return {"status": "ok"}
