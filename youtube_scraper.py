@@ -58,3 +58,5 @@
 
 
 print("This file has been deprecated. Please refer to the updated scraper implementation.")
+
+print("rUN.")
