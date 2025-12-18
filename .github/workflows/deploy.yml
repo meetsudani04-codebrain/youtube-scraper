@@ -5,13 +5,11 @@ on:
     branches:
       - main
 
-scripts: set - e
+# scripts: set -e
 
 jobs:
   test-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
 
     steps:
       # step1
@@ -27,6 +25,7 @@ jobs:
       # step3
       - name: Install dependencies
         run: |
+          set -e
           python -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
@@ -35,6 +34,7 @@ jobs:
       # step4
       - name: Run Tests
         run: |
+          set -e
           source venv/bin/activate
           echo "----------------------------Running pytest"
           pytest -v --maxfail=1 --disable-warnings tests/
@@ -43,5 +43,6 @@ jobs:
       - name: Deploy to Render
         if: success()
         run: |
+          set -e
           echo "-------------------------------- Triggering Render Deploy"
           curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
