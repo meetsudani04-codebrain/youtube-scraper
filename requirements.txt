@@ -7,3 +7,5 @@ six
 tzdata          
 yt-dlp          
 pytest
+fastapi
+uvicorn[standard]
