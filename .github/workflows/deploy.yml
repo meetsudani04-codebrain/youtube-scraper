@@ -5,6 +5,8 @@ on:
     branches:
       - main
 
+scripts: set - e
+
 jobs:
   test-and-deploy:
     runs-on: ubuntu-latest
