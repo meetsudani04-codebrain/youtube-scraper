@@ -35,7 +35,15 @@ jobs:
           echo "===== Running pytest ====="
           pytest -v --maxfail=1 --disable-warnings tests/
 
-      # Step 5: Deploy only if tests pass
+
+  # Step 5: Deploy only if tests pass
+  deploy:
+    needs: test-and-deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      
       - name: Deploy to EC2
         if: success()
         uses: appleboy/ssh-action@v1.0.3

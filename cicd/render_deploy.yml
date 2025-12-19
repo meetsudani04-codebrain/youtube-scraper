@@ -1,0 +1,48 @@
+name: CI/CD FastAPI with Tests & Render Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+# scripts: set -e
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # step1
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # step2
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      # step3
+      - name: Install dependencies
+        run: |
+          set -e
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # step4
+      - name: Run Tests
+        run: |
+          set -e
+          source venv/bin/activate
+          echo "----------------------------Running pytest"
+          pytest -v --maxfail=1 --disable-warnings tests/
+
+      # step5
+      - name: Deploy to Render
+        if: success()
+        run: |
+          set -e
+          echo "-------------------------------- Triggering Render Deploy"
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
