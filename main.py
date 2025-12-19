@@ -9,3 +9,7 @@ def health():
 @app.get("/add/{a}/{b}")
 def add(a: int, b: int) -> int:
     return a - b
+
+@app.get("/subtract/{a}/{b}")
+def subtract(a: int, b: int) -> int:
+    return a - b
