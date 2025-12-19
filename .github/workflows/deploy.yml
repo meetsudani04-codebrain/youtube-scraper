@@ -1,48 +1,55 @@
-name: CI/CD FastAPI with Tests & Render Deploy
+name: CI/CD FastAPI with Tests & Logs
 
 on:
   push:
     branches:
       - main
 
-# scripts: set -e
-
 jobs:
   test-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # step1
+      # Step 1: Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # step2
+      # Step 2: Setup Python
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      # step3
+      # Step 3: Install dependencies
       - name: Install dependencies
         run: |
-          set -e
           python -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      # step4
+      # Step 4: Run tests with logs
       - name: Run Tests
         run: |
-          set -e
           source venv/bin/activate
-          echo "----------------------------Running pytest"
+          echo "===== Running pytest ====="
           pytest -v --maxfail=1 --disable-warnings tests/
 
-      # step5
-      - name: Deploy to Render
+      # Step 5: Deploy only if tests pass
+      - name: Deploy to EC2
         if: success()
-        run: |
-          set -e
-          echo "-------------------------------- Triggering Render Deploy"
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd /home/ubuntu/fastapi-app
+            echo "===== Activating virtual environment ====="
+            source venv/bin/activate
+            echo "===== Pulling latest code ====="
+            git pull origin main
+            echo "===== Installing dependencies ====="
+            pip install -r requirements.txt
+            echo "===== Restarting FastAPI service ====="
+            sudo systemctl restart fastapi
