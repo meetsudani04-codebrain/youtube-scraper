@@ -13,3 +13,7 @@ def add(a: int, b: int) -> int:
 @app.get("/subtract/{a}/{b}")
 def subtract(a: int, b: int) -> int:
     return a - b
+
+@app.get("/multiply/{a}/{b}")
+def multiply(a: int, b: int) -> int:
+    return a * b
