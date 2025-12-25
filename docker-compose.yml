@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  youtube-scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: youtube-scraper-app
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./:/app
+    restart: unless-stopped
+    networks:
+      - scraper-network
+
+networks:
+  scraper-network:
+    driver: bridge
