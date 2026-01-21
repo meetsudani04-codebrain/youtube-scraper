@@ -1,129 +1,93 @@
-# # import yt_dlp
-# # import csv
+import requests
+import os
+import pandas as pd
+from dotenv import load_dotenv
 
-# # # =====================
-# # # Configuration
-# # # =====================
-
-# # URL = "https://www.youtube.com/watch?v=KAgzgYYYcCQ"
-
-# # ydl_opts = {
-# #     'skip_download': True,      # don’t download media
-# #     'quiet': True,              # minimize logs
-# #     'no_warnings': True,        # suppress warnings
-# #     'ignore_errors': True,      # skip problems
-# # }
-
-# # output_csv_file = "yt_metadata.csv"
-
-# # # =====================
-# # # Scrape & Save
-# # # =====================
-
-# # def extract_metadata(url):
-# #     data = []
-# #     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-# #         info = ydl.extract_info(url, download=False)
-
-# #         # If playlist / channel
-# #         videos = info.get('entries') or [info]
-
-# #         for video in videos:
-# #             if not video:
-# #                 continue
-# #             data.append({
-# #                 'id': video.get('id'),
-# #                 'title': video.get('title'),
-# #                 'uploader': video.get('uploader'),
-# #                 'channel_id': video.get('channel_id'),
-# #                 'upload_date': video.get('upload_date'),
-# #                 'duration': video.get('duration'),
-# #                 'view_count': video.get('view_count'),
-# #                 'like_count': video.get('like_count'),
-# #                 'comment_count': video.get('comment_count'),
-# #                 'url': video.get('webpage_url'),
-# #             })
-# #     return data
-
-# # if __name__ == "__main__":
-# #     rows = extract_metadata(URL)
-
-# #     # Save to CSV
-# #     with open(output_csv_file, "w", newline="", encoding="utf-8") as f:
-# #         writer = csv.DictWriter(f, fieldnames=rows[0].keys())
-# #         writer.writeheader()
-# #         writer.writerows(rows)
-
-# #     print(f"Saved {len(rows)} items to {output_csv_file}")
+from datetime import datetime
+load_dotenv()
 
 
-# print("This file has been deprecated. Please refer to the updated scraper implementation.")
+API_KEY = os.getenv("YOUTUBE_API_KEY")
 
-# print("rUN.")
+# --------------------------
+# HELPER FUNCTIONS
+# --------------------------
+def get_channel_info(channel_id):
+    url = f"https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id={channel_id}&key={API_KEY}"
+    response = requests.get(url).json()
 
-# Let me get information about which AWS services are available under the free tier and any current usage.
+    if not response.get("items"):
+        return None
 
-# Querying Cost Management APIs
+    item = response["items"][0]
+    snippet = item["snippet"]
+    stats = item["statistics"]
 
-# Analyzing Billing and Cost Management data
+    published_at = snippet.get("publishedAt", "")
+    try:
+        published_at = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
+    except:
+        pass
 
-# Retrieving free tier data
+    return {
+        "Channel Name": snippet.get("title"),
+        "Channel ID": item.get("id"),
+        "Channel URL": f"https://www.youtube.com/channel/{item.get('id')}",
+        "Subscribers": int(stats.get("subscriberCount", 0)),
+        "Total Videos": int(stats.get("videoCount", 0)),
+        "Total Views": int(stats.get("viewCount", 0)),
+        "Country": snippet.get("country", "N/A"),
+        "Joined Date": published_at,
+        "Thumbnail URL": snippet.get("thumbnails", {}).get("default", {}).get("url"),
+        "About Section": snippet.get("description")
+    }
 
-# Operation: GetAccountPlanState | View on AWS console home 
+# --------------------------
+# SEARCH CHANNELS BY KEYWORD
+# --------------------------
+def search_channels_by_keyword(keyword, max_channels, min_subs, max_subs):
+    channels_data = []
+    next_page_token = None
 
-# Retrieving free tier data
+    while len(channels_data) < max_channels:
+        url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q={keyword}&maxResults=50&key={API_KEY}"
+        if next_page_token:
+            url += f"&pageToken={next_page_token}"
 
-# Operation: GetFreeTierUsage | View on Free Tier page 
+        response = requests.get(url).json()
 
-# Based on your account information, here's your AWS Free Tier status:
+        for item in response.get("items", []):
+            channel_id = item["snippet"]["channelId"]
+            info = get_channel_info(channel_id)
 
-# Your Account Type: Free Plan account (created after July 15, 2025)
+            if info and min_subs <= info["Subscribers"] <= max_subs:
+                channels_data.append(info)
+                if len(channels_data) >= max_channels:
+                    break
 
-# Current Free Tier Usage: No active usage detected for any services
+        next_page_token = response.get("nextPageToken")
+        if not next_page_token:
+            break
 
-# Available Benefits:
+    return channels_data
 
-# Up to $200 in credits (you have $100 remaining)
-# Credits valid until June 18, 2026
-# Access to Always Free services
-# AWS Free Tier Services Include:
+# --------------------------
+# MAIN
+# --------------------------
+if __name__ == "__main__":
+    keyword = input("Enter keyword: ").strip()
+    max_channels = int(input("Max channels: "))
+    min_subs = int(input("Min subscribers: "))
+    max_subs = int(input("Max subscribers: "))
 
-# Compute:
-# Amazon EC2 - Virtual servers in the cloud
-# AWS Lambda - Serverless computing
+    print(f"\nSearching channels for '{keyword}' ...")
 
+    channels = search_channels_by_keyword(keyword, max_channels, min_subs, max_subs)
 
-# Storage:
-# Amazon S3 - Object storage
-# Amazon EBS - Block storage for EC2
-
-# Database:
-# Amazon RDS - Managed relational databases
-# Amazon DynamoDB - NoSQL database
-
-# Networking:
-# Amazon CloudFront - Content delivery network
-# Amazon VPC - Virtual private cloud
-
-
-# Analytics:
-# Amazon CloudWatch - Monitoring and observability
-
-# Security & Identity:
-# AWS IAM - Identity and access management
-# AWS Certificate Manager - SSL/TLS certificates
-
-# Developer Tools:
-# AWS CodeCommit - Source control service
-# AWS CodeBuild - Build service
-
-# Machine Learning:
-# Amazon Rekognition - Image and video analysis
-# Amazon Comprehend - Natural language processing
-# For the most current and complete list of free tier services with specific usage limits for your account type, visit the AWS Free Tier page .
-
-# Since you currently have no active usage, you can start experimenting with these services within the free tier limits without any charges as long as you stay within your $100 remaining credits.
-
-
-
-
+    if channels:
+        df = pd.DataFrame(channels)
+        filename = f"youtube_channels_{keyword}.xlsx"
+        df.to_excel(filename, index=False)
+        print(f"Saved {len(channels)} channels to {filename}")
+    else:
+        print("No channels found")
