@@ -52,15 +52,26 @@ if st.sidebar.button("Start Scraping"):
         st.error("Please enter a keyword")
     else:
         with st.spinner("Fetching channels from YouTube..."):
-            channels = search_channels_by_keyword(
-                keyword=keyword,
-                max_channels=max_channels,
-                min_subs=min_subs,
-                max_subs=max_subs
-            )
+            try:
+                channels = search_channels_by_keyword(
+                    keyword=keyword,
+                    max_channels=max_channels,
+                    min_subs=min_subs,
+                    max_subs=max_subs
+                )
+            except ValueError as e:
+                st.error(f"⚠️  Configuration Error: {str(e)}")
+                st.info("**Setup Instructions:**\n1. Get a YouTube API key from [Google Cloud Console](https://console.cloud.google.com/)\n2. Create a `.env` file in the project folder:\n```\nYOUTUBE_API_KEY=your_api_key_here\n```\n3. Restart the app")
+                channels = None
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
+                channels = None
 
-        if not channels:
-            st.warning("No channels found with the given filters.")
+        if channels is None:
+            pass
+        elif not channels:
+            st.warning(f"⚠️  No channels found for '{keyword}' with subscriber range {min_subs:,} - {max_subs:,}")
+            st.info("💡 Tips to find channels:\n- Try broader keywords (e.g., 'travel vlog' instead of just 'travel')\n- Adjust the subscriber range - many channels may fall outside your range\n- Check that your API key is valid")
         else:
             df = pd.DataFrame(channels)
 
