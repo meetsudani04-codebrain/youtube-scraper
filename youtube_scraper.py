@@ -49,7 +49,7 @@ def search_channels_by_keyword(keyword, max_channels, min_subs, max_subs):
     channels_data = []
     next_page_token = None
 
-    while len(channels_data) < max_channels:
+    while True:
         url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q={keyword}&maxResults=50&key={API_KEY}"
         if next_page_token:
             url += f"&pageToken={next_page_token}"
@@ -60,16 +60,24 @@ def search_channels_by_keyword(keyword, max_channels, min_subs, max_subs):
             channel_id = item["snippet"]["channelId"]
             info = get_channel_info(channel_id)
 
-            if info and min_subs <= info["Subscribers"] <= max_subs:
+            if not info:
+                continue
+
+            subs = info["Subscribers"]
+
+            if min_subs <= subs <= max_subs:
                 channels_data.append(info)
+
                 if len(channels_data) >= max_channels:
-                    break
+                    return channels_data
 
         next_page_token = response.get("nextPageToken")
+
         if not next_page_token:
-            break
+            break  # No more search pages
 
     return channels_data
+
 
 # --------------------------
 # MAIN
