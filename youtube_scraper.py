@@ -9,12 +9,24 @@ load_dotenv()
 
 API_KEY = os.getenv("YOUTUBE_API_KEY")
 
+if not API_KEY:
+    raise ValueError("⚠️  YOUTUBE_API_KEY environment variable is not set. Please set it in .env file or system environment.")
+
 # --------------------------
 # HELPER FUNCTIONS
 # --------------------------
 def get_channel_info(channel_id):
     url = f"https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id={channel_id}&key={API_KEY}"
-    response = requests.get(url).json()
+    
+    try:
+        response = requests.get(url).json()
+    except Exception as e:
+        print(f"❌ Error fetching channel {channel_id}: {str(e)}")
+        return None
+
+    if response.get("error"):
+        print(f"❌ API Error: {response['error'].get('message', 'Unknown error')}")
+        return None
 
     if not response.get("items"):
         return None
@@ -48,15 +60,35 @@ def get_channel_info(channel_id):
 def search_channels_by_keyword(keyword, max_channels, min_subs, max_subs):
     channels_data = []
     next_page_token = None
+    search_attempts = 0
 
     while True:
         url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q={keyword}&maxResults=50&key={API_KEY}"
         if next_page_token:
             url += f"&pageToken={next_page_token}"
 
-        response = requests.get(url).json()
+        try:
+            response = requests.get(url).json()
+        except Exception as e:
+            print(f"❌ Search request failed: {str(e)}")
+            break
 
-        for item in response.get("items", []):
+        # Check for API errors
+        if response.get("error"):
+            error_msg = response['error'].get('message', 'Unknown error')
+            print(f"❌ API Error: {error_msg}")
+            if "quota" in error_msg.lower():
+                print("💡 Tip: YouTube API daily quota exceeded. Try again tomorrow.")
+            break
+
+        search_attempts += 1
+        items = response.get("items", [])
+        
+        if not items:
+            print(f"ℹ️  No more results found after {search_attempts} search page(s)")
+            break
+
+        for item in items:
             channel_id = item["snippet"]["channelId"]
             info = get_channel_info(channel_id)
 
@@ -67,6 +99,7 @@ def search_channels_by_keyword(keyword, max_channels, min_subs, max_subs):
 
             if min_subs <= subs <= max_subs:
                 channels_data.append(info)
+                print(f"✅ Found: {info['Channel Name']} ({subs} subs)")
 
                 if len(channels_data) >= max_channels:
                     return channels_data
