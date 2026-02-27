@@ -51,3 +51,6 @@ uritemplate
 urllib3                   
 watchdog         
 dotenv        
+python-dotenv
+psycopg2-binary
+yagmail

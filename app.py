@@ -1,6 +1,26 @@
 import streamlit as st
 import pandas as pd
 from youtube_scraper import search_channels_by_keyword
+from db.db_helpers import save_youtube_channels
+from config.auth import (
+    require_auth,
+    get_current_user_id,
+    redirect_to_login,
+    hide_default_sidebar_nav,
+    render_authenticated_sidebar,
+    logout_user,
+)
+
+hide_default_sidebar_nav()
+
+# Check authentication
+if not require_auth():
+    redirect_to_login()
+
+# Get current user ID
+current_user_id = get_current_user_id()
+username = st.session_state.get('username', 'User')
+
 # --------------------------
 # PAGE CONFIG
 # --------------------------
@@ -9,7 +29,16 @@ st.set_page_config(
     layout="wide"
 )
 
+with st.sidebar:
+    render_authenticated_sidebar("dashboard")
+    st.header(f"{username}")
+    st.caption(f"User ID: {current_user_id}")
+    if st.button("Logout", use_container_width=True):
+        logout_user()
+        st.rerun()
+
 st.title("YouTube Channel Scraper")
+st.info(f"**Logged in as:** {username} | Your scraped channels will be saved to your account")
 st.write("Search YouTube channels by keyword and filter by subscriber range")
 
 # --------------------------
@@ -77,6 +106,18 @@ if st.sidebar.button("Start Scraping"):
 
             st.success(f"✅ Found {len(df)} channels")
             st.dataframe(df, use_container_width=True)
+
+            # Save to database
+            try:
+                saved_count = save_youtube_channels(
+                    channels=channels,
+                    search_keyword=keyword,
+                    user_id=current_user_id
+                )
+                st.info(f"💾 Saved {saved_count} channels to database")
+            except Exception as e:
+                st.warning(f"⚠️  Database save error: {str(e)}")
+                st.info("Channels are still available for download below.")
 
             # Save Excel
             excel_file = f"youtube_channels_{keyword}.xlsx"
